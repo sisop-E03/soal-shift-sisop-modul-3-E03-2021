@@ -21,14 +21,14 @@ int length=5; //inisialisasi jumlah untuk looping
 void* playandcount(void *arg)
 {
     
-    char abc[200];
-    strcpy(abc,arg);
+    char things[200];
+    strcpy(things,arg);
 
 	unsigned long i=0;
 	pthread_t id=pthread_self();
 	int iter;
 
-    char *token1 = strtok(abc, "/");
+    char *token1 = strtok(things, "/");
     while( token1 != NULL ) {
         // printf( "token %d = %s\n", m , token1 );
         arr2[m] = token1;
@@ -49,7 +49,7 @@ void* playandcount(void *arg)
     }
 
     char titik= '.';
-    char bb;
+
     char hid=namafile[0];
 
     char *arr[4]

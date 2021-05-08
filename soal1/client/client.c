@@ -16,7 +16,7 @@
 #define LOGIN_CODE "11"
 #define REGISTER_CODE "12"
 #define ADD_CODE "51"
-#define DONWLOAD_CODE "52"
+#define DOWNLOAD_CODE "52"
 #define DELETE_CODE "53"
 #define SEE_CODE "54"
 #define FIND_CODE "55"
@@ -253,9 +253,8 @@ void handle_download_command(int socketfd) {
     int file_size;
     int remain_data;
     ssize_t len;
-    FILE *received_file;
 
-    send(socketfd, DONWLOAD_CODE, strlen(DONWLOAD_CODE), 0);
+    send(socketfd, DOWNLOAD_CODE, strlen(DOWNLOAD_CODE), 0);
 
     clear_buffer(buffer);
     valread = read(socketfd, buffer, BUFSIZ);
@@ -266,25 +265,34 @@ void handle_download_command(int socketfd) {
     send(socketfd, filename_to_download, strlen(filename_to_download), 0);
 
     clear_buffer(buffer);
-    recv(socketfd, buffer, BUFSIZ, 0);
-    file_size = atoi(buffer);
-    
-    received_file = fopen(filename_to_download, "w");
-    if (received_file == NULL) {
-            perror("Failed to open file");
-            exit(EXIT_FAILURE);
-    }
+    valread = read(socketfd, buffer, BUFSIZ);
 
-    remain_data = file_size;
+    if (strcmp(buffer, SUCCESS) == 0) {
+        send(socketfd, SUCCESS, strlen(SUCCESS), 0);
+            
+        clear_buffer(buffer);
+        recv(socketfd, buffer, BUFSIZ, 0);
+        file_size = atoi(buffer);
 
-    while ((remain_data > 0) && ((len = recv(socketfd, buffer, BUFSIZ, 0)) > 0))
-    {
-            fwrite(buffer, sizeof(char), len, received_file);
-            fprintf(stdout, "%s\n", buffer);
-            remain_data -= len;
-            fprintf(stdout, "Receive %ld bytes, %d bytes remaining\n", len, remain_data);
+        FILE *received_file;
+        
+        received_file = fopen(filename_to_download, "w");
+        if (received_file == NULL) {
+                perror("Failed to open file");
+                exit(EXIT_FAILURE);
+        }
+
+        remain_data = file_size;
+
+        while ((remain_data > 0) && ((len = recv(socketfd, buffer, BUFSIZ, 0)) > 0)) {
+                fwrite(buffer, sizeof(char), len, received_file);
+                remain_data -= len;
+        }
+
+        fclose(received_file);
+    } else {
+        fprintf(stdout, "File %s does not exist\n", filename_to_download);
     }
-    fclose(received_file);
 }
 
 void handle_see_command(int socketfd) {
@@ -314,7 +322,11 @@ void handle_delete_command(int socketfd) {
 
     clear_buffer(buffer);
     valread = read(socketfd, buffer, BUFSIZ);
-    fprintf(stdout, "%s deleted\n", filename);
+    if (strcmp(buffer, SUCCESS) == 0) {
+        fprintf(stdout, "%s deleted\n", filename);
+    } else {
+        fprintf(stdout, "File %s do not exist\n", filename);
+    }
 }
 
 void handle_find_command(int socketfd) {
@@ -333,7 +345,10 @@ void handle_find_command(int socketfd) {
 
     clear_buffer(buffer);
     valread = read(socketfd, buffer, BUFSIZ);
-    fprintf(stdout, "%s", buffer);
+    if (strlen(buffer) > 0)
+        fprintf(stdout, "%s", buffer);
+    else 
+        fprintf(stdout, "No file exist with substring %s\n", filename_to_find);
 }
 
 void handle_logout_command(int socketfd) {
@@ -377,7 +392,6 @@ void create_upload_request(int socketfd, char file_path[]) {
     while (((sent_bytes = sendfile(socketfd, fd, &offset, BUFSIZ)) > 0) && (remain_data > 0))
     {
             remain_data -= sent_bytes;
-            fprintf(stdout, "Upload %d bytes, offset is now %ld and remaining data %d bytes\n", sent_bytes, offset, remain_data);
     }
 }
 

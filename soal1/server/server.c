@@ -18,7 +18,7 @@
 #define LOGIN_CODE "11"
 #define REGISTER_CODE "12"
 #define ADD_CODE "51"
-#define DONWLOAD_CODE "52"
+#define DOWNLOAD_CODE "52"
 #define DELETE_CODE "53"
 #define SEE_CODE "54"
 #define FIND_CODE "55"
@@ -152,7 +152,7 @@ void handle_client_request(int socketfd, char user_auth[]) {
 
         if (strcmp(request, ADD_CODE) == 0) {
             handle_add_request(socketfd, user_auth);
-        } else if (strcmp(request, DONWLOAD_CODE) == 0) {
+        } else if (strcmp(request, DOWNLOAD_CODE) == 0) {
             handle_download_request(socketfd);
         } else if (strcmp(request, DELETE_CODE) == 0) {
             handle_delete_request(socketfd, user_auth);
@@ -319,7 +319,14 @@ void handle_download_request(int socketfd) {
     char file_path[100];
     sprintf(file_path, "FILES/%s", filename);
 
+    fprintf(stdout, "%s %ld\n", file_path, strlen(file_path));
+
     if (is_file_path_exist_in_tsv(file_path)) {
+        send(socketfd, SUCCESS, strlen(SUCCESS), 0);
+        
+        clear_buffer(buffer);
+        valread = read(socketfd, buffer, BUFSIZ);
+
         fd = open(file_path, O_RDONLY);
 
         if (fstat(fd, &file_stat) < 0) {
@@ -335,15 +342,13 @@ void handle_download_request(int socketfd) {
         offset = 0;
         remain_data = file_stat.st_size;
 
-        while (((sent_bytes = sendfile(socketfd, fd, &offset, BUFSIZ)) > 0) && (remain_data > 0))
-        {   
+        while (((sent_bytes = sendfile(socketfd, fd, &offset, BUFSIZ)) > 0) && (remain_data > 0)) {   
                 remain_data -= sent_bytes;
                 fprintf(stdout, "Sent %d bytes from file's data, offset is now %ld and remaining data %d bytes\n", sent_bytes, offset, remain_data);
         }
     } else {
-        perror("file not exist");
-        exit(0);
-    }    
+        send(socketfd, FAILED, strlen(FAILED), 0);
+    }
 }
 
 void handle_see_request(int socketfd) {
@@ -439,7 +444,7 @@ void handle_find_request(int socketfd) {
     char formatted_data[BUFSIZ];
     formatted_data[0] = '\0';
 
-    while (fgets(line, sizeof line, fp)) {
+    while (fgets(line, sizeof line, fp) != NULL) {
         if (is_filename_substring_of_tsv_line(line, filename_to_find))
             read_and_format_tsv_line(line, formatted_data);
     }
@@ -494,13 +499,13 @@ char* read_and_format_tsv_line(char line[], char buffer[]) {
 int is_file_path_exist_in_tsv(char file_path[]) {
 
     int is_file_exist = 0;
-    int index = 0;
     char line[50];
     char file_path_exist[20];
     char filename[] = "file.tsv";
     FILE *fp = fopen(filename, "r");
 
     while (fgets(line, sizeof line, fp)) {
+        int index = 0;
         extract_string_with_delimiter_and_index_pointer(line, file_path_exist, '\t', &index);
         if (strcmp(file_path_exist, file_path) == 0){
             is_file_exist = 1;

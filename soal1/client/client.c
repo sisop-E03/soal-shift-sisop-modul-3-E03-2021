@@ -24,6 +24,7 @@
 #define END_CONN "57"
 
 int create_socket();
+void connect_to_server(int socketfd);
 void app_menu(int socketfd);
 int handle_login(int socketfd);
 void handle_register(int socketfd);
@@ -38,9 +39,9 @@ void create_upload_request(int socketfd, char file_path[]);
 void clear_buffer(char* b);
 
 int main(int argc, char const *argv[]) {
-    int socketfd;
+    int socketfd = create_socket();
 
-    if (socketfd = create_socket())
+    if (socketfd == -1)
         exit(0);
 
     connect_to_server(socketfd);
@@ -81,14 +82,12 @@ void connect_to_server(int socketfd) {
     int valread;
     
     send(socketfd, HANDSHAKE, strlen(HANDSHAKE), 0);
-    fprintf(stdout, "Sent authentication data: %s\n", HANDSHAKE);
 
     fprintf(stdout, "Menunggu koneksi dari server...\n");
     
     clear_buffer(buffer);
     valread = read(socketfd , buffer, BUFSIZ);
-    fprintf(stdout, "Receive status %s\n", buffer);
-    fprintf(stdout, "Sudah terhubung dengan server...\n");
+    fprintf(stdout, "Terhubung dengan server\n");
 
     app_menu(socketfd);
 }
@@ -99,19 +98,16 @@ void app_menu(int socketfd) {
 
     while(1) {
         fprintf(stdout, "Menu:\n1. Login\n2.Register\n3.End connection\n");
-        fprintf(stdout, "Your choice: ");
+        fprintf(stdout, "Type command: ");
 
         char choice[10];
         fscanf(stdin, "%s", choice);
         
         if (strlen(choice) == 1 && choice[0] == '1') {
             send(socketfd, LOGIN_CODE, strlen(LOGIN_CODE), 0);
-            fprintf(stdout, "Sent menu code %s\n", LOGIN_CODE);
 
             clear_buffer(buffer);
             valread = read(socketfd , buffer, BUFSIZ);
-
-            fprintf(stdout, "Receive status code %s\n", buffer);
 
             if (handle_login(socketfd)) {
                 authenticate_user_interface(socketfd);
@@ -119,21 +115,16 @@ void app_menu(int socketfd) {
 
         } else if (strlen(choice) == 1 && choice[0] == '2') {
             send(socketfd, REGISTER_CODE, strlen(REGISTER_CODE), 0);
-            fprintf(stdout, "Sent menu code %s\n", REGISTER_CODE);
 
             clear_buffer(buffer);
             valread = read(socketfd , buffer, BUFSIZ);
-
-            fprintf(stdout, "Receive status code %s\n", buffer);
             
             handle_register(socketfd);
         } else if (strlen(choice) == 1 && choice[0] == '3') {
             send(socketfd, END_CONN, strlen(END_CONN), 0);
-            fprintf(stdout, "Sent end connection code %s\n", END_CONN);
-
             break;
         } else {
-            fprintf(stdout, "Choice code not valid\n");
+            fprintf(stdout, "Command not valid\n");
         }
     }
 }
@@ -155,16 +146,15 @@ int handle_login(int socketfd) {
     sprintf(auth_data, "%s:%s", username, password);
 
     send(socketfd, auth_data, strlen(auth_data), 0);
-    fprintf(stdout, "Sent authentication data: %s\n", auth_data);
     
     clear_buffer(buffer);
     valread = read(socketfd , buffer, BUFSIZ);
 
     if (strcmp(buffer, SUCCESS) == 0) {
-        fprintf(stdout, "Login berhasil\n");
+        fprintf(stdout, "Login success\n");
         return 1;
     } else {
-        fprintf(stdout, "Login gagal\n");
+        fprintf(stdout, "Login failed\n");
         return 0;
     }
 }
@@ -184,15 +174,14 @@ void handle_register(int socketfd) {
     sprintf(reg_data, "%s:%s", username, password);
 
     send(socketfd, reg_data, strlen(reg_data), 0);
-    fprintf(stdout, "Sent registration data: %s\n", reg_data);
 
     clear_buffer(buffer);
     valread = read(socketfd, buffer, BUFSIZ);
 
     if (strcmp(buffer, SUCCESS) == 0) {
-        fprintf(stdout, "Register berhasil\n");
+        fprintf(stdout, "Register success\n");
     } else {
-        fprintf(stdout, "Register gagal\n");
+        fprintf(stdout, "Register failed\n");
     }
 }
 
@@ -230,11 +219,9 @@ void handle_add_command(int socketfd) {
     char add_data[110];
 
     send(socketfd, ADD_CODE, strlen(ADD_CODE), 0);
-    fprintf(stdout, "Sent add code %s\n", ADD_CODE);
 
     clear_buffer(buffer);
     valread = read(socketfd, buffer, BUFSIZ);
-    fprintf(stdout, "Receive status %s\n", buffer);
 
     fprintf(stdout, "Publisher: ");
     fscanf(stdin, "%s", publisher);
@@ -246,7 +233,6 @@ void handle_add_command(int socketfd) {
     sprintf(add_data, "%s:%s:%s", file_path, publisher, tahun_pub);
 
     send(socketfd, add_data, strlen(add_data), 0);
-    fprintf(stdout, "Sent new book data: %s\n", add_data);
 
     create_upload_request(socketfd, file_path);
 
@@ -270,29 +256,22 @@ void handle_download_command(int socketfd) {
     FILE *received_file;
 
     send(socketfd, DONWLOAD_CODE, strlen(DONWLOAD_CODE), 0);
-    fprintf(stdout, "Sent download data: %s\n", DONWLOAD_CODE);
 
     clear_buffer(buffer);
     valread = read(socketfd, buffer, BUFSIZ);
-    fprintf(stdout, "Receive status %s\n", buffer);
 
     char filename_to_download[50];
     fscanf(stdin, "%s", filename_to_download);
 
     send(socketfd, filename_to_download, strlen(filename_to_download), 0);
-    fprintf(stdout, "Sent filename to download %s\n", filename_to_download);
 
     clear_buffer(buffer);
     recv(socketfd, buffer, BUFSIZ, 0);
     file_size = atoi(buffer);
-
-    fprintf(stdout, "Received file size : %d\n", file_size);
     
     received_file = fopen(filename_to_download, "w");
-    if (received_file == NULL)
-    {
+    if (received_file == NULL) {
             perror("Failed to open file");
-
             exit(EXIT_FAILURE);
     }
 
@@ -303,7 +282,7 @@ void handle_download_command(int socketfd) {
             fwrite(buffer, sizeof(char), len, received_file);
             fprintf(stdout, "%s\n", buffer);
             remain_data -= len;
-            fprintf(stdout, "Receive %ld bytes and %d bytes remaining\n", len, remain_data);
+            fprintf(stdout, "Receive %ld bytes, %d bytes remaining\n", len, remain_data);
     }
     fclose(received_file);
 }
@@ -313,7 +292,6 @@ void handle_see_command(int socketfd) {
     int valread;
     
     send(socketfd, SEE_CODE, strlen(SEE_CODE), 0);
-    fprintf(stdout, "Sent see code %s\n", SEE_CODE);
 
     clear_buffer(buffer);
     valread = read(socketfd, buffer, BUFSIZ);
@@ -325,21 +303,18 @@ void handle_delete_command(int socketfd) {
     int valread;
     
     send(socketfd, DELETE_CODE, strlen(DELETE_CODE), 0);
-    fprintf(stdout, "Sent delete code %s\n", DELETE_CODE);
 
     clear_buffer(buffer);
     valread = read(socketfd, buffer, BUFSIZ);
-    fprintf(stdout, "Receive status %s\n", buffer);
 
-    char filename_to_find[50];
-    fscanf(stdin, "%s", filename_to_find);
+    char filename[50];
+    fscanf(stdin, "%s", filename);
 
-    send(socketfd, filename_to_find, strlen(filename_to_find), 0);
-    fprintf(stdout, "Sent filename to delete %s\n", filename_to_find);
+    send(socketfd, filename, strlen(filename), 0);
 
     clear_buffer(buffer);
     valread = read(socketfd, buffer, BUFSIZ);
-    fprintf(stdout, "Receive status %s\n", buffer);
+    fprintf(stdout, "%s deleted\n", filename);
 }
 
 void handle_find_command(int socketfd) {
@@ -347,17 +322,14 @@ void handle_find_command(int socketfd) {
     int valread;
     
     send(socketfd, FIND_CODE, strlen(FIND_CODE), 0);
-    fprintf(stdout, "Sent see code %s\n", FIND_CODE);
 
     clear_buffer(buffer);
     valread = read(socketfd, buffer, BUFSIZ);
-    fprintf(stdout, "Receive status %s\n", buffer);
 
     char filename_to_find[50];
     fscanf(stdin, "%s", filename_to_find);
 
     send(socketfd, filename_to_find, strlen(filename_to_find), 0);
-    fprintf(stdout, "Sent filename to find %s\n", filename_to_find);
 
     clear_buffer(buffer);
     valread = read(socketfd, buffer, BUFSIZ);
@@ -369,11 +341,9 @@ void handle_logout_command(int socketfd) {
     int valread;
 
     send(socketfd, LOGOUT_CODE, strlen(LOGOUT_CODE), 0);
-    fprintf(stdout, "Sent logout code %s\n", LOGOUT_CODE);
 
     clear_buffer(buffer);
     valread = read(socketfd , buffer, BUFSIZ);
-    fprintf(stdout, "Receive code %s\n", buffer);
 }
 
 void create_upload_request(int socketfd, char file_path[]) {
@@ -389,30 +359,25 @@ void create_upload_request(int socketfd, char file_path[]) {
 
     clear_buffer(buffer);
     valread = read(socketfd, buffer, BUFSIZ);
-    fprintf(stdout, "Receive status %s\n", buffer);
 
     fd = open(file_path, O_RDONLY);
 
-    if (fstat(fd, &file_stat) < 0)
-    {
+    if (fstat(fd, &file_stat) < 0) {
             perror("filestat error");
-
             exit(EXIT_FAILURE);
     }
 
     sprintf(file_size, "%ld", file_stat.st_size);
 
     send(socketfd, file_size, sizeof(file_size), 0);
-    fprintf(stdout, "Sent file size %s bytes\n", file_size);
 
     offset = 0;
     remain_data = file_stat.st_size;
 
     while (((sent_bytes = sendfile(socketfd, fd, &offset, BUFSIZ)) > 0) && (remain_data > 0))
     {
-            fprintf(stdout, "1. Client upload %d bytes from file's data, offset is now : %ld and remaining data = %d\n", sent_bytes, offset, remain_data);
             remain_data -= sent_bytes;
-            fprintf(stdout, "2. Client upload %d bytes from file's data, offset is now : %ld and remaining data = %d\n", sent_bytes, offset, remain_data);
+            fprintf(stdout, "Upload %d bytes, offset is now %ld and remaining data %d bytes\n", sent_bytes, offset, remain_data);
     }
 }
 

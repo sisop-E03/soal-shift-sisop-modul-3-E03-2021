@@ -39,6 +39,7 @@ void handle_delete_request(int socketfd, char user_auth[]);
 void handle_find_request(int socketfd);
 void extract_data(char buffer[], char filename[], char publisher[], char tahun_pub[]);
 char* read_and_format_tsv_line(char line[], char buffer[]);
+int is_file_path_exist_in_tsv(char file_path[]);
 int is_filename_substring_of_tsv_line(char line[], char filename[]);
 void delete_line_in_file_by_line_number(char file_name[], int line_number);
 void extract_string_with_delimiter_and_index_pointer(char string[], char extraction[], char delimiter, int *index);
@@ -105,7 +106,7 @@ void* handle_new_connection(void *arg) {
     fprintf(stdout, "Receive connection handshake %s\n", buffer);
 
     send(socketfd, SUCCESS, strlen(SUCCESS), 0);
-    fprintf(stdout, "Sent status %s\n", SUCCESS);
+    fprintf(stdout, "Sent response %s\n", SUCCESS);
 
     handle_menu_request(socketfd);
 }
@@ -117,11 +118,8 @@ void handle_menu_request(int socketfd) {
     while (1) {
         clear_buffer(buffer);
         valread = read(socketfd, buffer, BUFSIZ);
-
-        fprintf(stdout, "Receive %s code\n", buffer);
         
         send(socketfd, SUCCESS, strlen(SUCCESS), 0);
-        fprintf(stdout, "Sent success status code\n");
 
         if (strcmp(buffer, LOGIN_CODE) == 0) {
             char user_auth[50];
@@ -143,14 +141,12 @@ void handle_menu_request(int socketfd) {
 void handle_client_request(int socketfd, char user_auth[]) {
     char buffer[BUFSIZ];
     int valread;
-
-    fprintf(stdout, "Enter handle client request\n");
+    
     while (1) {
         char request[10];
 
         clear_buffer(buffer);
         valread = read(socketfd, buffer, BUFSIZ);
-        fprintf(stdout, "Receive request code: %s\n", buffer);
 
         strcpy(request, buffer);
 
@@ -165,21 +161,17 @@ void handle_client_request(int socketfd, char user_auth[]) {
         } else if (strcmp(request, FIND_CODE) == 0) {
             handle_find_request(socketfd);
         } else if (strcmp(request, LOGOUT_CODE) == 0) {
-            
             send(socketfd, SUCCESS, strlen(SUCCESS), 0);
-            fprintf(stdout, "Sent SUCCESS code %s\n", SUCCESS);
-            
             break;
         } else {
             perror("BAD REQUEST");
             exit(0);
         }
     }
-    fprintf(stdout, "Leaving handle client request\n");
 }
 
 char* handle_login(int socketfd) {
-    char buffer[BUFSIZ];
+    char *buffer = malloc(sizeof(char) * BUFSIZ);
     int valread;
 
     FILE *fp = fopen("akun.txt", "r");
@@ -188,8 +180,6 @@ char* handle_login(int socketfd) {
     
     clear_buffer(buffer);
     valread = read(socketfd, buffer, BUFSIZ);
-    
-    fprintf(stdout, "Receive authentication data: %s\n", buffer);
 
     while (fscanf(fp, "%s", valid_credential) != EOF) {
         if (strcmp(buffer, valid_credential) == 0) {
@@ -202,11 +192,9 @@ char* handle_login(int socketfd) {
 
     if (is_credential_valid) {
         send(socketfd, SUCCESS, strlen(SUCCESS), 0);
-        fprintf(stdout, "Sent login success code\n");
         return buffer;
     } else {
         send(socketfd, FAILED, strlen(FAILED), 0);
-        fprintf(stdout, "Sent login failed code\n");
         return FAILED;
     }
 }
@@ -220,13 +208,10 @@ void handle_register(int socketfd) {
 
     clear_buffer(buffer);
     valread = read(socketfd, buffer, BUFSIZ);
-    fprintf(stdout, "Receive registration data: %s\n", buffer);
 
     fprintf(fp, "%s\n", buffer);
-    fprintf(stdout, "Registration data saved to akun.txt\n");
 
     send(socketfd, SUCCESS, strlen(SUCCESS), 0);
-    fprintf(stdout, "Sent registration success code\n");
 
     fclose(fp);
 }
@@ -249,7 +234,6 @@ void handle_add_request(int socketfd, char user_auth[]) {
     
     clear_buffer(buffer);
     valread = read(socketfd, buffer, BUFSIZ);
-    fprintf(stdout, "Receive new boSUCCESS data: %s\n", buffer);
 
     char filename[50];
     char publisher[50];
@@ -262,17 +246,11 @@ void handle_add_request(int socketfd, char user_auth[]) {
 
     handle_upload_request(socketfd, filename);
 
-    fprintf(stdout, "buffer: %s\n", buffer);
-    fprintf(stdout, "file_path: %s\n", file_path);
-    fprintf(stdout, "publisher: %s\n", publisher);
-    fprintf(stdout, "tahun_pub: %s\n", tahun_pub);
-
     fprintf(fp, "%s\t", file_path);
     fprintf(fp, "%s\t", publisher);
     fprintf(fp, "%s\n", tahun_pub);
     
     send(socketfd, SUCCESS, strlen(SUCCESS), 0);
-    fprintf(stdout, "Sent login success code\n");
 
     FILE *fp_log;
     fp_log = fopen("running.log", "a+");
@@ -281,8 +259,6 @@ void handle_add_request(int socketfd, char user_auth[]) {
 
     fclose(fp_log);
     fclose(fp);
-
-    fprintf(stdout, "Leaving handle add request\n");
 }
 
 void handle_upload_request(int socketfd, char filename[]) {
@@ -295,13 +271,12 @@ void handle_upload_request(int socketfd, char filename[]) {
     FILE *received_file;
 
     send(socketfd, SUCCESS, strlen(SUCCESS), 0);
-    fprintf(stdout, "Sent status %s\n", SUCCESS);
 
     clear_buffer(buffer);
     recv(socketfd, buffer, BUFSIZ, 0);
     file_size = atoi(buffer);
 
-    fprintf(stdout, "Received file size : %d\n", file_size);
+    fprintf(stdout, "Received file with size %d bytes\n", file_size);
 
     char file_path[100];
     sprintf(file_path, "FILES/%s", filename);
@@ -316,7 +291,6 @@ void handle_upload_request(int socketfd, char filename[]) {
 
     while ((remain_data > 0) && ((len = recv(socketfd, buffer, BUFSIZ, 0)) > 0)) {
             fwrite(buffer, sizeof(char), len, received_file);
-            fprintf(stdout, "%s\n", buffer);
             remain_data -= len;
             fprintf(stdout, "Receive %ld bytes and %d bytes remaining\n", len, remain_data);
     }
@@ -335,41 +309,41 @@ void handle_download_request(int socketfd) {
     int remain_data;
 
     send(socketfd, SUCCESS, strlen(SUCCESS), 0);
-    fprintf(stdout, "Sent status %s\n", SUCCESS);
 
     clear_buffer(buffer);
     valread = read(socketfd, buffer, BUFSIZ);
-    fprintf(stdout, "Receive filename to delete %s\n", buffer);
 
-    char file_name[50];
-    strcpy(file_name, buffer);
+    char filename[50];
+    strcpy(filename, buffer);
 
     char file_path[100];
-    sprintf(file_path, "FILES/%s", file_name);
+    sprintf(file_path, "FILES/%s", filename);
 
-    fd = open(file_path, O_RDONLY);
+    if (is_file_path_exist_in_tsv(file_path)) {
+        fd = open(file_path, O_RDONLY);
 
-    if (fstat(fd, &file_stat) < 0)
-    {
-            perror("filestat error");
+        if (fstat(fd, &file_stat) < 0) {
+                perror("filestat error");
+                exit(EXIT_FAILURE);
+        }
 
-            exit(EXIT_FAILURE);
-    }
+        sprintf(file_size, "%ld", file_stat.st_size);
 
-    sprintf(file_size, "%ld", file_stat.st_size);
+        send(socketfd, file_size, sizeof(file_size), 0);
+        fprintf(stdout, "Sent file with size %s bytes\n", file_size);
 
-    send(socketfd, file_size, sizeof(file_size), 0);
-    fprintf(stdout, "Sent file size %s bytes\n", file_size);
+        offset = 0;
+        remain_data = file_stat.st_size;
 
-    offset = 0;
-    remain_data = file_stat.st_size;
-
-    while (((sent_bytes = sendfile(socketfd, fd, &offset, BUFSIZ)) > 0) && (remain_data > 0))
-    {
-            fprintf(stdout, "1. Server sent %d bytes from file's data, offset is now : %ld and remaining data = %d\n", sent_bytes, offset, remain_data);
-            remain_data -= sent_bytes;
-            fprintf(stdout, "2. Server sent %d bytes from file's data, offset is now : %ld and remaining data = %d\n", sent_bytes, offset, remain_data);
-    }
+        while (((sent_bytes = sendfile(socketfd, fd, &offset, BUFSIZ)) > 0) && (remain_data > 0))
+        {   
+                remain_data -= sent_bytes;
+                fprintf(stdout, "Sent %d bytes from file's data, offset is now %ld and remaining data %d bytes\n", sent_bytes, offset, remain_data);
+        }
+    } else {
+        perror("file not exist");
+        exit(0);
+    }    
 }
 
 void handle_see_request(int socketfd) {
@@ -388,7 +362,6 @@ void handle_see_request(int socketfd) {
     }
 
     send(socketfd, formatted_data, strlen(formatted_data), 0);
-    fprintf(stdout, "Sent formatted data from tsv file\n");
 
     fclose(fp);
 }
@@ -397,13 +370,10 @@ void handle_delete_request(int socketfd, char user_auth[]) {
     char buffer[BUFSIZ];
     int valread;
 
-    
     send(socketfd, SUCCESS, strlen(SUCCESS), 0);
-    fprintf(stdout, "Sent status %s\n", SUCCESS);
 
     clear_buffer(buffer);
     valread = read(socketfd, buffer, BUFSIZ);
-    fprintf(stdout, "Receive filename to delete %s\n", buffer);
 
     char filename_to_delete[50];
     strcpy(filename_to_delete, buffer);
@@ -443,10 +413,8 @@ void handle_delete_request(int socketfd, char user_auth[]) {
         fprintf(fp_log, "Hapus: %s (%s)\n", filename_to_delete, user_auth);
 
         send(socketfd, SUCCESS, strlen(SUCCESS), 0);
-        fprintf(stdout, "Sent status %s\n", SUCCESS);
     } else {
         send(socketfd, FAILED, strlen(FAILED), 0);
-        fprintf(stdout, "Sent status %s\n", FAILED);
     }
 
     fclose(fp);
@@ -458,11 +426,9 @@ void handle_find_request(int socketfd) {
     int valread;
 
     send(socketfd, SUCCESS, strlen(SUCCESS), 0);
-    fprintf(stdout, "Sent status %s\n", SUCCESS);
 
     clear_buffer(buffer);
     valread = read(socketfd, buffer, BUFSIZ);
-    fprintf(stdout, "Receive filename to find %s\n", buffer);
 
     char filename_to_find[50];
     strcpy(filename_to_find, buffer);
@@ -479,7 +445,6 @@ void handle_find_request(int socketfd) {
     }
 
     send(socketfd, formatted_data, strlen(formatted_data), 0);
-    fprintf(stdout, "Sent formatted data from tsv file\n");
 
     fclose(fp);
 }
@@ -523,9 +488,30 @@ char* read_and_format_tsv_line(char line[], char buffer[]) {
 
     strcat(buffer, formatted_data);
 
-    fprintf(stdout, "%s", buffer);
-
     return buffer;
+}
+
+int is_file_path_exist_in_tsv(char file_path[]) {
+
+    int is_file_exist = 0;
+    int index = 0;
+    char line[50];
+    char file_path_exist[20];
+    char filename[] = "file.tsv";
+    FILE *fp = fopen(filename, "r");
+
+    while (fgets(line, sizeof line, fp)) {
+        extract_string_with_delimiter_and_index_pointer(line, file_path_exist, '\t', &index);
+        if (strcmp(file_path_exist, file_path) == 0){
+            is_file_exist = 1;
+            break;
+        }
+    }
+
+    if (is_file_exist)
+        return 1;
+    else 
+        return 0;
 }
 
 int is_filename_substring_of_tsv_line(char line[], char filename[]) {
@@ -578,7 +564,6 @@ void extract_string_with_delimiter_and_index_pointer(char string[], char extract
     extraction[extraction_index] = '\0';
     *index += 1;
 }
-
 
 void clear_buffer(char* b)
 {

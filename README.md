@@ -349,6 +349,7 @@ Pada fungsi delete, server akan menerima nama file yang akan hapus. Selanjutnya 
 **F.** Client dapat melihat semua isi files.tsv dengan memanggil suatu perintah yang bernama see
 
 **Client**
+```c
 void handle_see_command(int socketfd) {
     ...    
     send(socketfd, SEE_CODE, strlen(SEE_CODE), 0);
@@ -357,9 +358,11 @@ void handle_see_command(int socketfd) {
     valread = read(socketfd, buffer, BUFSIZ);
     fprintf(stdout, "%s", buffer);
 }
+```
 Pada fungsi see, client mengirim SEE_CODE dan langsung menampilkan respon dari server
 
 **Server**
+```c
 void handle_see_request(int socketfd) {
     ...
     while (fgets(line, sizeof line, fp)) {
@@ -369,6 +372,7 @@ void handle_see_request(int socketfd) {
     send(socketfd, formatted_data, strlen(formatted_data), 0);
     ...
 }
+```
 Pada fungsi see, setelah server menerima SEE_CODE maka akan membaca isi dari file.tsv dan memformat isi tersebut sesuai requeirement soal.
 
 **G.** Aplikasi client juga dapat melakukan pencarian dengan memberikan suatu string. Hasilnya adalah semua nama file yang mengandung string tersebut. Format output seperti format output f.

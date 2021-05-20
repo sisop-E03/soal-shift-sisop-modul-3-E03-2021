@@ -111,6 +111,9 @@ void launch_server() {
 ```
 Agar server dapat menghandle banyak connections maka dibuat thread untuk menghandle setiap koneksi. Agar client menunggu jika ada client lain yang sedang terkoneksi maka digunakan fungsi pthread_join untuk menunggu thread sampai selesai baru membuat thread baru lagi untuk membuat koneksi dengan client baru.
 
+![alt text](https://github.com/sisop-E03/soal-shift-sisop-modul-3-E03-2021/blob/master/images/soal1/a1.png)
+![alt text](https://github.com/sisop-E03/soal-shift-sisop-modul-3-E03-2021/blob/master/images/soal1/a2.png)
+
 **B.** Sistem memiliki sebuah database yang bernama files.tsv. Isi dari files.tsv ini adalah path file saat berada di server, publisher, dan tahun publikasi. Setiap penambahan dan penghapusan file pada folder file yang bernama  FILES pada server akan memengaruhi isi dari files.tsv. Folder FILES otomatis dibuat saat server dijalankan. 
 
 **Server**
@@ -142,6 +145,8 @@ void handle_add_request(int socketfd, char user_auth[]) {
 }
 ```
 Fungsi add pada server menerima data buku dari server lalu mengekstrak data tersebut ke variabel-variabel yang bersesuaian dan dimasukkan ke file.tsv.
+
+![alt text](https://github.com/sisop-E03/soal-shift-sisop-modul-3-E03-2021/blob/master/images/soal1/c2.png)
 
 **C.** Client dapat menambah file baru ke dalam server. Kemudian, dari aplikasi client akan dimasukan data buku tersebut (perlu diingat bahwa Filepath ini merupakan path file yang akan dikirim ke server). Lalu client nanti akan melakukan pengiriman file ke aplikasi server dengan menggunakan socket. Ketika file diterima di server, maka row dari files.tsv akan bertambah sesuai dengan data terbaru yang ditambahkan.
 
@@ -190,6 +195,9 @@ void handle_add_request(int socketfd, char user_auth[]) {
     ...
 ```
 Fungsi add pada server menerima data buku dari server lalu mengekstrak data tersebut ke variabel-variabel yang bersesuaian dan dimasukkan ke file.tsv seperti pada **soal 1a**. Setelah itu dilakukan penerimaan untuk upload request dari client pada fungsi upload.
+
+![alt text](https://github.com/sisop-E03/soal-shift-sisop-modul-3-E03-2021/blob/master/images/soal1/c1.png)
+![alt text](https://github.com/sisop-E03/soal-shift-sisop-modul-3-E03-2021/blob/master/images/soal1/c2.png)
 
 **D.** Client dapat mendownload file yang telah ada dalam folder FILES di server, sehingga sistem harus dapat mengirim file ke client. Server harus melihat dari files.tsv untuk melakukan pengecekan apakah file tersebut valid. Jika tidak valid, maka mengirimkan pesan error balik ke client. Jika berhasil, file akan dikirim dan akan diterima ke client di folder client tersebut.
 
@@ -289,6 +297,8 @@ void handle_download_request(int socketfd) {
 ```
 Pada fungsi downlaod, server pertama akan mengecek apakah file yang diminta client ada pada database file.tsv. Jika ada maka pertama akan dikirimkan data ukuran file yang ditransfer. Setelah itu file tersebut akan dikirimkan secara paket per paket untuk mengatasi jika file yang akan ditransfer besar.
 
+![alt text](https://github.com/sisop-E03/soal-shift-sisop-modul-3-E03-2021/blob/master/images/soal1/d1.png)
+
 **E.** Setelah itu, client juga dapat menghapus file yang tersimpan di server. Akan tetapi, Keverk takut file yang dibuang adalah file yang penting, maka file hanya akan diganti namanya menjadi ‘old-NamaFile.ekstensi’. Ketika file telah diubah namanya, maka row dari file tersebut di file.tsv akan terhapus.
 
 **Client**
@@ -346,6 +356,9 @@ void handle_delete_request(int socketfd, char user_auth[]) {
 ```
 Pada fungsi delete, server akan menerima nama file yang akan hapus. Selanjutnya server akan mengecek apakah file yang diminta tersebut ada pada database file.tsv, jika ada maka semua data pada file.tsv kecuali pada baris yang ingin dihapus akan dicopy ke sebuah file temporary baru. Selanjutnya file.tsv diahapus dan file termporary baru diganti nama menjadi file.tsv
 
+![alt text](https://github.com/sisop-E03/soal-shift-sisop-modul-3-E03-2021/blob/master/images/soal1/e1.png)
+![alt text](https://github.com/sisop-E03/soal-shift-sisop-modul-3-E03-2021/blob/master/images/soal1/e2.png)
+
 **F.** Client dapat melihat semua isi files.tsv dengan memanggil suatu perintah yang bernama see
 
 **Client**
@@ -374,6 +387,8 @@ void handle_see_request(int socketfd) {
 }
 ```
 Pada fungsi see, setelah server menerima SEE_CODE maka akan membaca isi dari file.tsv dan memformat isi tersebut sesuai requeirement soal.
+
+![alt text](https://github.com/sisop-E03/soal-shift-sisop-modul-3-E03-2021/blob/master/images/soal1/f1.png)
 
 **G.** Aplikasi client juga dapat melakukan pencarian dengan memberikan suatu string. Hasilnya adalah semua nama file yang mengandung string tersebut. Format output seperti format output f.
 
@@ -427,7 +442,7 @@ void handle_find_request(int socketfd) {
 ```
 Pada fungsi find, server akan menerima string sebagai substring nama file yang ingin dicari. Setelah itu server akan membaca isi dari file.tsv dan mengecek pada setiap baris apakah mengandung substring yang dicari client. Jika ada maka data pada baris tersebut akan diformat dan ditambahkan pada formatted data yang nantinya akan dikirimkan ke client untuk ditampilkan.
 
-
+![alt text](https://github.com/sisop-E03/soal-shift-sisop-modul-3-E03-2021/blob/master/images/soal1/g1.png)
 
 **H.** Dikarenakan Keverk waspada dengan pertambahan dan penghapusan file di server, maka Keverk membuat suatu log untuk server yang bernama running.log. Contoh isi dari log ini adalah
 
@@ -445,6 +460,8 @@ void handle_add_request(int socketfd, char user_auth[]) {
 }
 ```
 Jika ada penambahan atau penghapusan file akan ditambahkan log pada runnning.log yang menyimpan jenis operasi, nama file, dan akun yang sedang aktif.
+
+![alt text](https://github.com/sisop-E03/soal-shift-sisop-modul-3-E03-2021/blob/master/images/soal1/h1.png)
 
 ### Kendala Pengerjaan
 1. Karena operasi dari soal nomor 1 cukup banyak, pada awal-awal pembuatan code sempat kesulitan untuk menentukan bagaimana harus menstrukturisasi dari codenya agar mudah dibaca dan dikembangkan

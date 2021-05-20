@@ -16,7 +16,9 @@
 
 pthread_t thd[3]; //inisialisasi array untuk menampung thread dalam kasus ini ada 2 thread
 pid_t child;
-int length=5; //inisialisasi jumlah untuk looping
+int length=5;
+int x=0;
+char tanda[300][300]={};
 
 void* playandcount(void *arg)
 {
@@ -28,6 +30,9 @@ void* playandcount(void *arg)
 	pthread_t id=pthread_self();
 	int iter;
 
+    int m=0;
+    char *arr2[50];
+    //ngambil namafile beserta eksistensi
     char *token1 = strtok(things, "/");
     while( token1 != NULL ) {
         // printf( "token %d = %s\n", m , token1 );
@@ -36,98 +41,72 @@ void* playandcount(void *arg)
         token1 = strtok(NULL, "/");
     }
     char namafile[200];
-    char *arr2[50];
     strcpy(namafile,arr2[m-1]);
     //printf("%s\n", arr3);
-    char *token = strtok(arr2[m-1], ".");
-    
-    int n=0;
-    while( token != NULL ) {
-        arr[n] = token;
-        n++;
-        token = strtok(NULL, ".");
-    }
 
-    char titik= '.';
-
-    char hid=namafile[0];
-
-    char *arr[4]
+    //cek filenya termasuk dalam folder apa
     char aa[100];
-    strcpy(aa,arr[n-1]);
-    for(int i = 0; aa[i]; i++){
-        aa[i] = tolower(aa[i]);
+    char *token = strchr(namafile, '.');
+    if(token== NULL){
+        strcat(aa, "Unknown");
     }
-  
-    DIR *folder, *folderopen;
-    struct dirent *entry;
-    char tempat2[100],tempat3[100];
-    folder = opendir("/home/vika/modul3/");
-    int available = 0;
-
-    //printf("%c %c\n",titik, hid);
-    if(titik== hid){
-        //printf("test\n");
-        strcpy(tempat2,"/home/vika/modul3/");
-        strcat(tempat2,"Hidden");
-        mkdir(tempat2,0750);
+    else if(namafile[0]=='.'){
+        strcat(aa, "Hidden");
     }
-
-    else {
-        if( n > 1 ){
-            if(folder == NULL)
-            {
-                printf("error\n");
-            }
-            while( (entry=readdir(folder)) )
-            {
-                //foldernya udah ada apa belum
-                // printf("%s %d\n",entry->d_name,entry->d_type);
-                if(strcmp(entry->d_name,aa) == 0 && entry->d_type == 4){
-                    //kalau ada
-                    available = 1;
-                    break;
-                }
-            }
-
-            //file gak ada
-            // printf("aa %s\n",tempat2);
-            if(available == 0){
-                // printf("bisa\n");
-                strcpy(tempat2,"/home/vika/modul3/");
-                strcat(tempat2,aa);
-                mkdir(tempat2,0750);        
-            }
-        }
-        else if (n<=1){
-            strcpy(tempat2,"/home/vika/modul3/");
-            strcat(tempat2,"Unknown");
-            mkdir(tempat2,0750);
+    else{
+        strcpy(aa,token+1);
+        for(int i = 0; aa[i]; i++){
+            aa[i] = tolower(aa[i]);
         }
     }
 
+    char tempat2[100];
+    strcpy(tempat2,"/home/vika/modul3/");
+    strcat(tempat2, aa);
+    strcat(tempat2,"/");
+    mkdir(tempat2,0750);
+    
     char source[1000], target[1000];
     strcpy(source,arg);
     strcpy(target,"/home/vika/modul3/");
-    if(n == 1 ){
-        strcat(target,"Unknown");
-    }
-    else if(titik==hid){
-        strcat(target,"Hidden");
-    }
-    else if (n>1){
-        strcat(target,aa);
-        
-    }
-
+    strcat(target,aa);
     strcat(target,"/");
-    strcat(target,namafile;
+    strcat(target,namafile);
+
+    //pindah file
     rename(source,target);
-    n = 0;
+    return NULL;
+}
 
-    //printf("%s \n %s \n", source, target);
+void listFilesRecursively(char *basePath)
+{
+	char path[256]={};
+	struct dirent *dp;
+	DIR *dir = opendir(basePath);
 
-	return NULL;
+	if (!dir)
+	return;
+
+	while ((dp = readdir(dir)) != NULL)
+	{
+		if (strcmp(dp->d_name, ".") != 0 && strcmp(dp->d_name, "..") != 0)
+		{
+			if (dp->d_type == DT_REG)
+			{
+				strcpy(tanda[x], basePath);
+				strcat(tanda[x], dp->d_name);
+				x++;
+			}
+			else
+			{
+				strcpy(path, basePath);
+				strcat(path, dp->d_name);
+				strcat(path, "/");
+				listFilesRecursively(path);
+			}
+		}
+	}
+	closedir(dir);
 }
 
 
@@ -136,7 +115,6 @@ int main(int argc, char *argv[]) {
 
     DIR *fd, *fdo;
         struct dirent *masuk;
-        char tempatx[200];
     //menambahkan argumen file yang bisa dikategorikan
     if (strcmp(argv[1],"-f") == 0) {
         for(j = 2 ; j < argc ; j++ ){
@@ -144,7 +122,7 @@ int main(int argc, char *argv[]) {
             //membuat thread
             err=pthread_create(&(thd[i]),NULL,playandcount,argv[j]);
             if (err !=0){
-                //error gak
+                //kalau error
                 printf ("File %d : Sad,gagal :(\n", j-1);
                 //return 0;
             }
@@ -160,71 +138,43 @@ int main(int argc, char *argv[]) {
     //pengkategorian suatu directory
     else if (strcmp(argv[1],"-d") == 0 && argc == 3) {
         i = 0;
-       
-        fd = opendir(argv[2]);
+	   int err;
+	    listFilesRecursively(argv[2]);
 
-        //gak bisa dibuka
-        if(fd == NULL)
-        {
-            printf("error\n");
+	    for (i=0; i<x; i++){
+		    err=pthread_create(&(thd[i]),NULL,&playandcount,(void *) tanda[i]);
+		    if(err!=0)
+		    {
+			    printf("Yah, gagal disimpan :(\n");
+			    return 0;;
+		    }
+	    }
+	    
+        for (i=0; i<x; i++){
+		    pthread_join(thd[i],NULL);
         }
 
-        while( (masuk=readdir(fd)) )
-        {
-            if ( !strcmp(masuk->d_name, ".") || !strcmp(masuk->d_name, "..") )
-            continue;
-            //printf("%s %d\n",masuk->d_name,masuk->d_type);
-
-            //nyimpen path
-            strcpy(tempatx,argv[2]);
-            strcat(tempatx,"/");
-            strcat(tempatx,masuk->d_name);
-            
-            //kalau file maka
-            if(masuk->d_type == 8){
-
-                //membuat thread
-            int err = pthread_create(&(thd[i]),NULL,playandcount,tempatx);
-            if (err !=0){
-                //error gak
-                printf ("Yah, gagal disimpan :(");
-                return 0;
-            }
-            pthread_join(thd[i],NULL);
-            i++;
-            }
-
-        }
-        printf("Direktori sukses disimpan!\n");
+    printf("Direktori sukses disimpan!\n");
     }
     
     //mengkategorikan seluruh file yang ada di working directory
     else if (strcmp(argv[1],"*") == 0 && argc == 2) {
         i = 0;
-        fd = opendir("/home/vika/modul3/");
-        int available = 0;
+	   int err;
+	    listFilesRecursively("/home/vika/modul3/");
 
-        if(fd == NULL)
-        {
-            printf("error\n");
+	    for (i=0; i<x; i++){
+		    err=pthread_create(&(thd[i]),NULL,&playandcount,(void *) tanda[i]);
+		    
+            if(err!=0){
+			    return 0;
+		    }
+	    }
+
+	    for (i=0; i<x; i++){
+		    pthread_join(thd[i],NULL);
         }
-        while( (masuk=readdir(fd)) )
-        {
-            if ( !strcmp(masuk->d_name, ".") || !strcmp(masuk->d_name, "..") )
-            continue;
-            //printf("%s %d\n",masuk->d_name,masuk->d_type);
-
-            int err;
-            strcpy(tempatx,"/home/vika/modul3/");
-            strcat(tempatx,masuk->d_name);
-            if(masuk->d_type == 8){
-                //membuat thread
-            pthread_create(&(thd[i]),NULL,playandcount,tempatx); 
-            pthread_join(thd[i],NULL);
-            i++;
-            }
-        }
-
+    
     }
     return 0; 
 }

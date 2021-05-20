@@ -467,3 +467,199 @@ Jika ada penambahan atau penghapusan file akan ditambahkan log pada runnning.log
 1. Karena operasi dari soal nomor 1 cukup banyak, pada awal-awal pembuatan code sempat kesulitan untuk menentukan bagaimana harus menstrukturisasi dari codenya agar mudah dibaca dan dikembangkan
 2. Sering berkendala karena antara send dan read pada client dan server tidak singkron
 3. Sempat berkendala karena setiap read ke tidak membersihkan buffer terlebih dahulu
+
+
+## Soal 3
+### Soal dan Penyelesaian
+
+Pada Soal 3 diminta untuk membuat program yang mengategorikan file kedalam folder sesuai dengan eksistensinya.
+Untuk mengategorikannya terdapat 3 opsi yaitu `-f`, `-d`,  dan `*`.
+
+```c
+int m=0;
+    char *arr2[50];
+    //ngambil namafile beserta eksistensi
+    char *token1 = strtok(things, "/");
+    while( token1 != NULL ) {
+        // printf( "token %d = %s\n", m , token1 );
+        arr2[m] = token1;
+        m++;
+        token1 = strtok(NULL, "/");
+    }
+    char namafile[200];
+    strcpy(namafile,arr2[m-1]);
+```
+
+program diatas untuk mengecek dan mengambil namafile beserta eksistensi yang dimiliki file tersebut.
+Setelah itu namafile akan dicek melalui program dibawah ini, jika namafile tidak memiliki eksistensi maka termasuk kedalam folder `Unknown`.
+jika namafile pada awalannya memiliki `.` maka termasuk kedalam folder `Hidden`.
+namun jika tidak keduanya maka akan dicek termasuk ke folder mana.
+karena program tidak case sensitive maka karakter di konversi menjadi huruf kecil dengan command `tolower`.
+
+```c
+//cek filenya termasuk dalam folder apa
+    char aa[100];
+    char *token = strchr(namafile, '.');
+    if(token== NULL){
+        strcat(aa, "Unknown");
+    }
+    else if(namafile[0]=='.'){
+        strcat(aa, "Hidden");
+    }
+    else{
+        strcpy(aa,token+1);
+        for(int i = 0; aa[i]; i++){
+            aa[i] = tolower(aa[i]);
+        }
+    }
+```
+
+setelah itu nama folder yang telah didapat akan dibuatkan foldernya dan file akan dipindahkan sesuai dengan eksistensi yang telah didapat.
+```c
+char tempat2[100];
+    strcpy(tempat2,"/home/vika/modul3/");
+    strcat(tempat2, aa);
+    strcat(tempat2,"/");
+    mkdir(tempat2,0750);
+    
+    char source[1000], target[1000];
+    strcpy(source,arg);
+    strcpy(target,"/home/vika/modul3/");
+    strcat(target,aa);
+    strcat(target,"/");
+    strcat(target,namafile);
+
+    //pindah file
+    rename(source,target);
+    return NULL;
+}
+
+```
+
+karena disoal berlaku recursive, maka menggunakan directory listing untuk melist file secara recursive.
+```c
+void listFilesRecursively(char *basePath)
+{
+	char path[256]={};
+	struct dirent *dp;
+	DIR *dir = opendir(basePath);
+
+	if (!dir)
+	return;
+
+	while ((dp = readdir(dir)) != NULL)
+	{
+		if (strcmp(dp->d_name, ".") != 0 && strcmp(dp->d_name, "..") != 0)
+		{
+            \\kalau yang dicek file bukan folder
+			if (dp->d_type == DT_REG)
+			{
+				strcpy(tanda[x], basePath);
+				strcat(tanda[x], dp->d_name);
+				x++;
+			}
+			else
+			{
+				strcpy(path, basePath);
+				strcat(path, dp->d_name);
+				strcat(path, "/");
+				listFilesRecursively(path);
+			}
+		}
+	}
+	closedir(dir);
+}
+```
+
+Opsi -f bisa menambahkan argumen file yang bisa dikategorikan sebanyak yang diinginkan oleh pengguna.
+Jika berhasil maka akan mengeluarkan output `file x : Berhasil Dikategorikan` dan jika gagagl akan mengeluarkan output `file x : Sad, gagal :( `.
+```c
+//menambahkan argumen file yang bisa dikategorikan
+    if (strcmp(argv[1],"-f") == 0) {
+        for(j = 2 ; j < argc ; j++ ){
+            int err;
+            //membuat thread
+            err=pthread_create(&(thd[i]),NULL,playandcount,argv[j]);
+            if (err !=0){
+                //kalau error
+                printf ("File %d : Sad,gagal :(\n", j-1);
+                //return 0;
+            }
+            else{
+                printf("File %d : Berhasil Dikategorikan\n",j-1);
+            }
+
+            pthread_join(thd[i],NULL);
+             i++;
+        }
+    }
+```
+ ![alt text](https://github.com/sisop-E03/soal-shift-sisop-modul-3-E03-2021/blob/master/soal3/soal3_coba%20-f.jpg)
+ 
+ ![alt text](https://github.com/sisop-E03/soal-shift-sisop-modul-3-E03-2021/blob/master/soal3/soal3_coba%20-f%201.jpg)
+ 
+ Untuk opsi -d melakukan pengkategorian pada suatu directory. Namun pada opsi -d ini, user hanya bisa memasukkan input 1 directory saja, tidak seperti file yang bebas menginput file sebanyak mungkin.
+ jika berhasil makan akan mengeluarkan output `Direktori sukses disimpan!` dan jika gagal akan mengeluarkan output `Yah, gagal disimpan :(`.
+ ```c
+ //pengkategorian suatu directory
+    else if (strcmp(argv[1],"-d") == 0 && argc == 3) {
+        i = 0;
+	   int err;
+	    listFilesRecursively(argv[2]);
+
+	    for (i=0; i<x; i++){
+		    err=pthread_create(&(thd[i]),NULL,&playandcount,(void *) tanda[i]);
+		    if(err!=0)
+		    {
+			    printf("Yah, gagal disimpan :(\n");
+			    return 0;;
+		    }
+	    }
+	    
+        for (i=0; i<x; i++){
+		    pthread_join(thd[i],NULL);
+        }
+
+    printf("Direktori sukses disimpan!\n");
+    }
+    
+ ```
+ 
+ ![alt text](https://github.com/sisop-E03/soal-shift-sisop-modul-3-E03-2021/blob/master/soal3/soal3_%20coba%20-d.jpg)
+ 
+  
+ Untuk Opsi `*` Opsi ini akan mengkategorikan seluruh file yang ada di working directory ketika menjalankan program C tersebut.
+ ```c
+ //mengkategorikan seluruh file yang ada di working directory
+    else if (strcmp(argv[1],"*") == 0 && argc == 2) {
+        i = 0;
+	   int err;
+	    listFilesRecursively("/home/vika/modul3/");
+
+	    for (i=0; i<x; i++){
+		    err=pthread_create(&(thd[i]),NULL,&playandcount,(void *) tanda[i]);
+		    
+            if(err!=0){
+			    return 0;
+		    }
+	    }
+
+	    for (i=0; i<x; i++){
+		    pthread_join(thd[i],NULL);
+        }
+    
+    }
+    return 0; 
+}
+ ```
+  ![alt text](https://github.com/sisop-E03/soal-shift-sisop-modul-3-E03-2021/blob/master/soal3/soal3_coba%20bintang.jpg)
+  
+  ![alt text](https://github.com/sisop-E03/soal-shift-sisop-modul-3-E03-2021/blob/master/soal3/soal3_file%20hidden.jpg) 
+  
+  ![alt text](https://github.com/sisop-E03/soal-shift-sisop-modul-3-E03-2021/blob/master/soal3/soal3_file%20unknown.jpg)
+  
+  
+### Kendala Pengerjaan
+1. Pada pengkategorian file, folder tidak terbuat berdasarkan eksistensi  sesuai "." terdepan
+2. file berpindah sesuai folder (antara hidden dan unknown)
+  

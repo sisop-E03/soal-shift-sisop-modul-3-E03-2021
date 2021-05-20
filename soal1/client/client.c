@@ -345,10 +345,10 @@ void handle_find_command(int socketfd) {
 
     clear_buffer(buffer);
     valread = read(socketfd, buffer, BUFSIZ);
-    if (strlen(buffer) > 0)
-        fprintf(stdout, "%s", buffer);
-    else 
+    if (strcmp(buffer, FAILED) == 0)
         fprintf(stdout, "No file exist with substring %s\n", filename_to_find);
+    else 
+        fprintf(stdout, "%s", buffer);
 }
 
 void handle_logout_command(int socketfd) {

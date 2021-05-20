@@ -654,10 +654,10 @@ Jika berhasil maka akan mengeluarkan output `file x : Berhasil Dikategorikan` da
  ```
   ![alt text](https://github.com/sisop-E03/soal-shift-sisop-modul-3-E03-2021/blob/master/soal3/soal3_coba%20bintang.jpg)
   
-  *isi folder hidden*
+
   ![alt text](https://github.com/sisop-E03/soal-shift-sisop-modul-3-E03-2021/blob/master/soal3/soal3_file%20hidden.jpg) 
   
-  *isi folder unknown*
+  
   ![alt text](https://github.com/sisop-E03/soal-shift-sisop-modul-3-E03-2021/blob/master/soal3/soal3_file%20unknown.jpg)
   
   

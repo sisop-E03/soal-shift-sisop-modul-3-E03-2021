@@ -4,8 +4,10 @@
 #include <netinet/in.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/sendfile.h>
+#include <unistd.h>
 #include <fcntl.h>
 #include <pthread.h>
 #include <wait.h>
@@ -82,6 +84,12 @@ void launch_server() {
     if (listen(server_fd, 3) < 0) {
         perror("listen failed");
         exit(EXIT_FAILURE);
+    }
+
+    struct stat st = {0};
+
+    if (stat("FILES", &st) == -1) {
+        mkdir("FILES", 0700);
     }
 
     while (1) {
@@ -444,12 +452,19 @@ void handle_find_request(int socketfd) {
     char formatted_data[BUFSIZ];
     formatted_data[0] = '\0';
 
+    int is_file_exist = 0;
+
     while (fgets(line, sizeof line, fp) != NULL) {
-        if (is_filename_substring_of_tsv_line(line, filename_to_find))
+        if (is_filename_substring_of_tsv_line(line, filename_to_find)) {
             read_and_format_tsv_line(line, formatted_data);
+            is_file_exist = 1;
+        }
     }
 
-    send(socketfd, formatted_data, strlen(formatted_data), 0);
+    if (is_file_exist)
+        send(socketfd, formatted_data, strlen(formatted_data), 0);
+    else 
+        send(socketfd, FAILED, strlen(FAILED), 0);
 
     fclose(fp);
 }

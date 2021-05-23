@@ -846,6 +846,7 @@ karena program tidak case sensitive maka karakter di konversi menjadi huruf keci
 ```
 
 setelah itu nama folder yang telah didapat akan dibuatkan foldernya dan file akan dipindahkan sesuai dengan eksistensi yang telah didapat.
+
 ```c
 char tempat2[100];
     strcpy(tempat2,"/home/vika/modul3/");
@@ -868,6 +869,7 @@ char tempat2[100];
 ```
 
 karena disoal berlaku recursive, maka menggunakan directory listing untuk melist file secara recursive.
+
 ```c
 void listFilesRecursively(char *basePath)
 {
@@ -904,6 +906,7 @@ void listFilesRecursively(char *basePath)
 
 Opsi -f bisa menambahkan argumen file yang bisa dikategorikan sebanyak yang diinginkan oleh pengguna.
 Jika berhasil maka akan mengeluarkan output `file x : Berhasil Dikategorikan` dan jika gagagl akan mengeluarkan output `file x : Sad, gagal :( `.
+
 ```c
 //menambahkan argumen file yang bisa dikategorikan
     if (strcmp(argv[1],"-f") == 0) {
@@ -930,8 +933,10 @@ Jika berhasil maka akan mengeluarkan output `file x : Berhasil Dikategorikan` da
  ![alt text](https://github.com/sisop-E03/soal-shift-sisop-modul-3-E03-2021/blob/master/soal3/soal3_coba%20-f%201.jpg)
  
  Untuk opsi -d melakukan pengkategorian pada suatu directory. Namun pada opsi -d ini, user hanya bisa memasukkan input 1 directory saja, tidak seperti file yang bebas menginput file sebanyak mungkin.
- jika berhasil makan akan mengeluarkan output `Direktori sukses disimpan!` dan jika gagal akan mengeluarkan output `Yah, gagal disimpan :(`.
- ```c
+Perintah di atas akan mengkategorikan file di `/path/to/directory`, lalu hasilnya akan disimpan di working directory dimana program C tersebut berjalan `/home/vika/modul3`
+jika berhasil makan akan mengeluarkan output `Direktori sukses disimpan!` dan jika gagal akan mengeluarkan output `Yah, gagal disimpan :(`.
+
+```c
  //pengkategorian suatu directory
     else if (strcmp(argv[1],"-d") == 0 && argc == 3) {
         i = 0;
@@ -959,7 +964,8 @@ Jika berhasil maka akan mengeluarkan output `file x : Berhasil Dikategorikan` da
  ![alt text](https://github.com/sisop-E03/soal-shift-sisop-modul-3-E03-2021/blob/master/soal3/soal3_%20coba%20-d.jpg)
  
   
- Untuk Opsi `*` Opsi ini akan mengkategorikan seluruh file yang ada di working directory ketika menjalankan program C tersebut.
+ Untuk Opsi `*` Opsi ini akan mengkategorikan seluruh file yang ada di working directory ketika menjalankan program C tersebut `/home/vika/modul3`.
+ 
  ```c
  //mengkategorikan seluruh file yang ada di working directory
     else if (strcmp(argv[1],"*") == 0 && argc == 2) {
@@ -994,5 +1000,5 @@ Jika berhasil maka akan mengeluarkan output `file x : Berhasil Dikategorikan` da
   
 ### Kendala Pengerjaan
 1. Pada pengkategorian file, folder tidak terbuat berdasarkan eksistensi  sesuai "." terdepan
-2. file berpindah sesuai folder (antara hidden dan unknown)
+2. file tidak berpindah sesuai folder (antara hidden dan unknown)
   
